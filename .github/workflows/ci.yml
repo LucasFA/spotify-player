@@ -10,6 +10,9 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
   RUST_FEATURES: "rodio-backend,lyric-finder,media-control,image,notify,clipboard"
+  LINUX_FEATURES: "daemon sixel"
+  MACOS_FEATURES: "sixel"
+  WINDOWS_FEATURES: ""
   LINUX_PACKAGES: "libssl-dev libasound2-dev libdbus-1-dev libxcb-shape0-dev libxcb-xfixes0-dev"
 
 jobs:
@@ -19,11 +22,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [macOS-latest, windows-latest, ubuntu-latest]
-        include:
-          - os: ubuntu-latest
-            OS_SPECIFIC_FEATURES: ",daemon, sixel"
-          - os: macOS-latest
-            OS_SPECIFIC_FEATURES: ",sixel"
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -36,8 +34,14 @@ jobs:
           tool: cargo-hack
 
       - uses: Swatinem/rust-cache@v2
+      - id: os_features
+        uses: ./.github/actions/determine-features
+        with:
+          linux_features: ${{ env.LINUX_FEATURES }}
+          macos_features: $${{ env.MACOS_FEATURES }}
+          windows_features: $${{ env.WINDOWS_FEATURES }}
 
-      - run: cargo hack check --rust-version --package spotify_player --all-targets --profile ci --features "${{ env.RUST_FEATURES }} ${{ matrix.OS_SPECIFIC_FEATURES }}"
+      - run: cargo hack check --rust-version --package spotify_player --all-targets --profile ci --features "${{ env.RUST_FEATURES }} ${{ steps.os_features.outputs.OS_FEATURES }}"
 
    rust-ci:
     if: github.event.pull_request.draft != true
@@ -49,11 +53,6 @@ jobs:
         include:
           - os: ubuntu-latest
             toolchain: beta
-            OS_SPECIFIC_FEATURES: ",daemon, sixel"
-          - os: ubuntu-latest
-            OS_SPECIFIC_FEATURES: ",daemon, sixel"
-          - os: macOS-latest
-            OS_SPECIFIC_FEATURES: ",sixel"
 
     runs-on: ${{ matrix.os }}
 
@@ -72,6 +71,13 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: clippy, rustfmt
 
+      - id: os_features
+        uses: ./.github/actions/determine-features
+        with:
+          linux_features: ${{ env.LINUX_FEATURES }}
+          macos_features: $${{ env.MACOS_FEATURES }}
+          windows_features: $${{ env.WINDOWS_FEATURES }}
+
       - uses: Swatinem/rust-cache@v2
 
       - name: Cargo format
@@ -81,8 +87,7 @@ jobs:
         run: cargo clippy --no-default-features --profile ci -- -D warnings
 
       - name: Cargo clippy with all features
-        run: cargo clippy --no-default-features --profile ci --features "${{ env.RUST_FEATURES }} ${{ matrix.OS_SPECIFIC_FEATURES }}" -- -D warnings
+        run: cargo clippy --no-default-features --profile ci --features "${{ env.RUST_FEATURES }} ${{ steps.os_features.outputs.OS_FEATURES }}" -- -D warnings
 
       - name: Cargo test
-        run: cargo test --no-default-features --profile ci --features "${{ env.RUST_FEATURES }} ${{ matrix.OS_SPECIFIC_FEATURES }}"
-
+        run: cargo test --no-default-features --profile ci --features "${{ env.RUST_FEATURES }} ${{ steps.os_features.outputs.OS_FEATURES }}"

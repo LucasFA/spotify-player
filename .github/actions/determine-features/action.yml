@@ -1,0 +1,23 @@
+name: "Determine OS-dependant features"
+inputs:
+  linux_features:
+  macos_features:
+  windows_features:
+outputs:
+  OS_FEATURES:
+    description: "Current runner OS's specific features"
+    value: ${{ steps.os_features.outputs.OS_FEATURES }}
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      id: os_features
+      run: |
+        if [ $RUNNER_OS == 'Linux' ]
+        then
+          echo "OS_FEATURES=${{ linux_features }}" >> $GITHUB_OUTPUT
+        elif [ $RUNNER_OS == 'Windows' ]
+          echo "OS_FEATURES=${{ windows_features }}" >> $GITHUB_OUTPUT
+        elif [ $RUNNER_OS == 'macOS']
+          echo "OS_FEATURES=${{ macOS_features }}" >> $GITHUB_OUTPUT
+        fi
