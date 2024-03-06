@@ -4,19 +4,19 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   push:
-    branches: '*'
+    branches: "*"
 
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
-  RUST_FEATURES: "rodio-backend,lyric-finder,media-control,image,notify,clipboard"
+  RUST_FEATURES: "rodio-backend lyric-finder media-control image notify clipboard"
   LINUX_FEATURES: "daemon sixel"
   MACOS_FEATURES: "sixel"
   WINDOWS_FEATURES: ""
   LINUX_PACKAGES: "libssl-dev libasound2-dev libdbus-1-dev libxcb-shape0-dev libxcb-xfixes0-dev"
 
 jobs:
-   msrv:
+  msrv:
     if: github.event.pull_request.draft != true
     strategy:
       fail-fast: false
@@ -28,12 +28,13 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install ${{ env.LINUX_PACKAGES }}
         if: ${{ runner.os == 'Linux'}}
       - uses: actions/checkout@v4
-      
+
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-hack
 
       - uses: Swatinem/rust-cache@v2
+
       - id: os_features
         uses: ./.github/actions/determine-features
         with:
@@ -41,9 +42,11 @@ jobs:
           macos_features: $${{ env.MACOS_FEATURES }}
           windows_features: $${{ env.WINDOWS_FEATURES }}
 
-      - run: cargo hack check --rust-version --package spotify_player --all-targets --profile ci --features "${{ env.RUST_FEATURES }} ${{ steps.os_features.outputs.OS_FEATURES }}"
+      - run: >
+          cargo hack check --rust-version --package spotify_player --all-targets --profile ci
+          --features "${{ env.RUST_FEATURES }} ${{ steps.os_features.outputs.OS_FEATURES }}"
 
-   rust-ci:
+  rust-ci:
     if: github.event.pull_request.draft != true
 
     strategy:
